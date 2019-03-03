@@ -27,12 +27,13 @@ __author__ = meta.author  # noqa
 __basedir__ = os.path.abspath(os.path.dirname(compat.fsdecode(__file__)))
 
 logger = logging.getLogger(__name__)
+prefix = os.getenv('BROWSEPY_PREFIX', '')
 
 app = Flask(
     __name__,
-    static_url_path='/static',
-    static_folder=os.path.join(__basedir__, "static"),
-    template_folder=os.path.join(__basedir__, "templates")
+    static_url_path=prefix + '/static',
+    static_folder=os.path.join(__basedir__, 'static'),
+    template_folder=os.path.join(__basedir__, 'templates'),
     )
 app.config.update(
     directory_base=compat.getcwd(),
@@ -153,8 +154,8 @@ def template_globals():
         }
 
 
-@app.route('/sort/<string:property>', defaults={"path": ""})
-@app.route('/sort/<string:property>/<path:path>')
+@app.route(prefix + '/sort/<string:property>', defaults={'path': ''})
+@app.route(prefix + '/sort/<string:property>/<path:path>')
 def sort(property, path):
     try:
         directory = Node.from_urlpath(path)
@@ -177,13 +178,13 @@ def sort(property, path):
         data.pop(0)
         raw_data = base64.b64encode(json.dumps(data).encode('utf-8'))
 
-    response = redirect(url_for(".browse", path=directory.urlpath))
+    response = redirect(url_for('.browse', path=directory.urlpath))
     response.set_cookie('browse-sorting', raw_data)
     return response
 
 
-@app.route("/browse", defaults={"path": ""})
-@app.route('/browse/<path:path>')
+@app.route(prefix + '/browse', defaults={'path': ''})
+@app.route(prefix + '/browse/<path:path>')
 def browse(path):
     sort_property = get_cookie_browse_sorting(path, 'text')
     sort_fnc, sort_reverse = browse_sortkey_reverse(sort_property)
@@ -203,7 +204,7 @@ def browse(path):
     return NotFound()
 
 
-@app.route('/open/<path:path>', endpoint="open")
+@app.route(prefix + '/open/<path:path>', endpoint='open')
 def open_file(path):
     try:
         file = Node.from_urlpath(path)
@@ -214,7 +215,7 @@ def open_file(path):
     return NotFound()
 
 
-@app.route("/download/file/<path:path>")
+@app.route(prefix + '/download/file/<path:path>')
 def download_file(path):
     try:
         file = Node.from_urlpath(path)
@@ -225,7 +226,7 @@ def download_file(path):
     return NotFound()
 
 
-@app.route("/download/directory/<path:path>.tgz")
+@app.route(prefix + '/download/directory/<path:path>.tgz')
 def download_directory(path):
     try:
         directory = Node.from_urlpath(path)
@@ -236,7 +237,7 @@ def download_directory(path):
     return NotFound()
 
 
-@app.route("/remove/<path:path>", methods=("GET", "POST"))
+@app.route(prefix + '/remove/<path:path>', methods=('GET', 'POST'))
 def remove(path):
     try:
         file = Node.from_urlpath(path)
@@ -250,11 +251,11 @@ def remove(path):
         return render_template('remove.html', file=file)
 
     file.remove()
-    return redirect(url_for(".browse", path=file.parent.urlpath))
+    return redirect(url_for('.browse', path=file.parent.urlpath))
 
 
-@app.route("/upload", defaults={'path': ''}, methods=("POST",))
-@app.route("/upload/<path:path>", methods=("POST",))
+@app.route(prefix + '/upload', defaults={'path': ''}, methods=('POST',))
+@app.route(prefix + '/upload/<path:path>', methods=('POST',))
 def upload(path):
     try:
         directory = Node.from_urlpath(path)
@@ -280,12 +281,12 @@ def upload(path):
                     path=directory.path,
                     filename=f.filename
                     )
-    return redirect(url_for(".browse", path=directory.urlpath))
+    return redirect(url_for('.browse', path=directory.urlpath))
 
 
-@app.route("/")
+@app.route(prefix + '/')
 def index():
-    path = app.config["directory_start"] or app.config["directory_base"]
+    path = app.config['directory_start'] or app.config['directory_base']
     try:
         urlpath = Node(path).urlpath
     except OutsideDirectoryBase:
